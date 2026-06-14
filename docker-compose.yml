@@ -1,0 +1,91 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: llmeval
+      POSTGRES_PASSWORD: llmeval
+      POSTGRES_DB: llmevaldb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U llmeval -d llmevaldb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  mlflow:
+    image: python:3.14-slim
+    ports:
+      - "5001:5000"
+    volumes:
+      - mlflow_artifacts:/mlflow-artifacts
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      sh -c "pip install -q mlflow psycopg2-binary &&
+             mlflow server --backend-store-uri postgresql://llmeval:llmeval@postgres:5432/llmevaldb
+             --default-artifact-root /mlflow-artifacts --host 0.0.0.0 --port 5000"
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_INSTALL_PLUGINS: "grafana-piechart-panel"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: "postgresql+asyncpg://llmeval:llmeval@postgres:5432/llmevaldb"
+      DATABASE_URL_SYNC: "postgresql://llmeval:llmeval@postgres:5432/llmevaldb"
+      MLFLOW_TRACKING_URI: "http://mlflow:5000"
+      OLLAMA_BASE_URL: "http://host.docker.internal:11434"
+      REDIS_URL: "redis://redis:6379/0"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mlflow:
+        condition: service_started
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  dashboard:
+    build: ./dashboard
+    ports:
+      - "8501:8501"
+    depends_on:
+      - app
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  mlflow_artifacts:
+  grafana_data:
+  redis_data:

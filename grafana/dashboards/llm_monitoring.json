@@ -1,0 +1,67 @@
+{
+  "title": "LLM Evaluation & Monitoring",
+  "version": 1,
+  "panels": [
+    {
+      "title": "Average Latency (ms)",
+      "type": "stat",
+      "datasource": "PostgreSQL",
+      "gridPos": {"h": 8, "w": 6, "x": 0, "y": 0},
+      "targets": [
+        {
+          "rawSql": "SELECT AVG(latency_ms) AS avg_latency FROM evaluations WHERE created_at > NOW() - INTERVAL '24 hours';",
+          "format": "table"
+        }
+      ]
+    },
+    {
+      "title": "Hallucination Score Over Time",
+      "type": "graph",
+      "datasource": "PostgreSQL",
+      "gridPos": {"h": 8, "w": 12, "x": 6, "y": 0},
+      "targets": [
+        {
+          "rawSql": "SELECT created_at, hallucination_score FROM evaluations WHERE hallucination_score IS NOT NULL ORDER BY created_at;",
+          "format": "time_series"
+        }
+      ]
+    },
+    {
+      "title": "Token Cost Over Time",
+      "type": "graph",
+      "datasource": "PostgreSQL",
+      "gridPos": {"h": 8, "w": 6, "x": 0, "y": 8},
+      "targets": [
+        {
+          "rawSql": "SELECT created_at, token_cost FROM evaluations ORDER BY created_at;",
+          "format": "time_series"
+        }
+      ]
+    },
+    {
+      "title": "Total Evaluations (Last 7 Days)",
+      "type": "stat",
+      "datasource": "PostgreSQL",
+      "gridPos": {"h": 8, "w": 6, "x": 6, "y": 8},
+      "targets": [
+        {
+          "rawSql": "SELECT COUNT(*) AS total FROM evaluations WHERE created_at > NOW() - INTERVAL '7 days';",
+          "format": "table"
+        }
+      ]
+    },
+    {
+      "title": "Quality Score Distribution",
+      "type": "piechart",
+      "datasource": "PostgreSQL",
+      "gridPos": {"h": 8, "w": 6, "x": 12, "y": 0},
+      "targets": [
+        {
+          "rawSql": "SELECT CASE WHEN quality_score >= 0.8 THEN 'High' WHEN quality_score >= 0.5 THEN 'Medium' ELSE 'Low' END AS bucket, COUNT(*) AS count FROM evaluations WHERE quality_score IS NOT NULL GROUP BY bucket;",
+          "format": "table"
+        }
+      ]
+    }
+  ],
+  "time": {"from": "now-24h", "to": "now"}
+}
