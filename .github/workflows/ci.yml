@@ -66,6 +66,8 @@ jobs:
           pip install pydantic pydantic-settings python-dotenv prometheus-client
           pip install tenacity numpy httpx python-multipart
           pip install mlflow redis
+          # sentence-transformers without torch for import mocking
+          pip install sentence-transformers --no-deps
 
       - name: Test with pytest
         run: python -m pytest tests/ -v --tb=short --cov=app --cov-report=term --cov-report=xml
