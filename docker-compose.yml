@@ -33,6 +33,18 @@ services:
              --default-artifact-root /mlflow-artifacts --host 0.0.0.0 --port 5000"
     restart: unless-stopped
 
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=30d"
+    restart: unless-stopped
+
   grafana:
     image: grafana/grafana:latest
     ports:
@@ -43,10 +55,11 @@ services:
       GF_INSTALL_PLUGINS: "grafana-piechart-panel"
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
       - ./grafana/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana/provisioning:/etc/grafana/provisioning/dashboards
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
     depends_on:
-      - postgres
+      - prometheus
     restart: unless-stopped
 
   redis:
@@ -80,6 +93,8 @@ services:
     build: ./dashboard
     ports:
       - "8501:8501"
+    environment:
+      API_BASE_URL: "http://app:8000"
     depends_on:
       - app
     restart: unless-stopped
@@ -89,3 +104,4 @@ volumes:
   mlflow_artifacts:
   grafana_data:
   redis_data:
+  prometheus_data:

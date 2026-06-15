@@ -5,7 +5,9 @@ import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
 
-API_BASE = "http://localhost:8080/api"
+import os
+
+API_BASE = os.getenv("API_BASE_URL", "http://localhost:8080") + "/api"
 
 st.set_page_config(page_title="LLM Evaluation Dashboard", layout="wide")
 st.title("🤖 LLM Evaluation & Monitoring Platform")

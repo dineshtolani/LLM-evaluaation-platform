@@ -1,0 +1,182 @@
+{
+  "title": "LLM Evaluation Platform",
+  "uid": "llm-eval-platform",
+  "tags": ["llm", "evaluation"],
+  "timezone": "browser",
+  "editable": true,
+  "panels": [
+    {
+      "title": "Evaluation Rate",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 0},
+      "targets": [{
+        "expr": "rate(llm_evaluations_total[5m])",
+        "legendFormat": "{{model_name}} {{status}}"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {"showPoints": "never"}
+        }
+      }
+    },
+    {
+      "title": "Latency (P50 / P95 / P99)",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 0},
+      "targets": [
+        {"expr": "histogram_quantile(0.50, rate(llm_evaluation_latency_seconds_bucket[5m]))", "legendFormat": "p50"},
+        {"expr": "histogram_quantile(0.95, rate(llm_evaluation_latency_seconds_bucket[5m]))", "legendFormat": "p95"},
+        {"expr": "histogram_quantile(0.99, rate(llm_evaluation_latency_seconds_bucket[5m]))", "legendFormat": "p99"}
+      ],
+      "fieldConfig": {
+        "defaults": {"unit": "s", "custom": {"showPoints": "never"}}
+      }
+    },
+    {
+      "title": "Hallucination Score",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 0},
+      "targets": [{
+        "expr": "rate(llm_hallucination_score_sum[5m]) / rate(llm_hallucination_score_count[5m])",
+        "legendFormat": "avg hallucination"
+      }],
+      "fieldConfig": {
+        "defaults": {"unit": "none", "min": 0, "max": 1, "custom": {"showPoints": "never"}}
+      }
+    },
+    {
+      "title": "Token Usage",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 8},
+      "targets": [{
+        "expr": "rate(llm_token_usage_total[5m])",
+        "legendFormat": "{{type}}"
+      }],
+      "fieldConfig": {
+        "defaults": {"unit": "none", "custom": {"showPoints": "never"}}
+      }
+    },
+    {
+      "title": "Toxicity Score",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 8},
+      "targets": [{
+        "expr": "rate(llm_toxicity_score_sum[5m]) / rate(llm_toxicity_score_count[5m])",
+        "legendFormat": "avg toxicity"
+      }],
+      "fieldConfig": {
+        "defaults": {"unit": "none", "min": 0, "max": 1, "custom": {"showPoints": "never"}}
+      }
+    },
+    {
+      "title": "Quality Score",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 8},
+      "targets": [{
+        "expr": "rate(llm_quality_score_sum[5m]) / rate(llm_quality_score_count[5m])",
+        "legendFormat": "avg quality"
+      }],
+      "fieldConfig": {
+        "defaults": {"unit": "none", "min": 0, "max": 1, "custom": {"showPoints": "never"}}
+      }
+    },
+    {
+      "title": "GPU Utilization",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 16},
+      "targets": [{
+        "expr": "llm_gpu_utilization_ratio",
+        "legendFormat": "GPU util"
+      }],
+      "fieldConfig": {
+        "defaults": {"unit": "percentunit", "min": 0, "max": 1, "custom": {"showPoints": "never"}}
+      }
+    },
+    {
+      "title": "GPU Memory",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 16},
+      "targets": [{
+        "expr": "llm_gpu_memory_used_mb",
+        "legendFormat": "GPU mem"
+      }],
+      "fieldConfig": {
+        "defaults": {"unit": "MB", "custom": {"showPoints": "never"}}
+      }
+    },
+    {
+      "title": "Ollama Request Errors",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 16},
+      "targets": [{
+        "expr": "rate(llm_ollama_requests_total{status=\"error\"}[5m])",
+        "legendFormat": "errors"
+      }],
+      "fieldConfig": {
+        "defaults": {"unit": "ops", "custom": {"showPoints": "never"}}
+      }
+    },
+    {
+      "title": "Total Evaluations",
+      "type": "stat",
+      "datasource": "Prometheus",
+      "gridPos": {"h": 4, "w": 4, "x": 0, "y": 24},
+      "targets": [{"expr": "sum(llm_evaluations_total)"}],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {"mode": "fixed", "fixedColor": "blue"}
+        }
+      }
+    },
+    {
+      "title": "Toxic Responses",
+      "type": "stat",
+      "datasource": "Prometheus",
+      "gridPos": {"h": 4, "w": 4, "x": 4, "y": 24},
+      "targets": [{"expr": "sum(llm_toxic_responses_total)"}],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {"mode": "fixed", "fixedColor": "red"}
+        }
+      }
+    },
+    {
+      "title": "Avg Latency",
+      "type": "stat",
+      "datasource": "Prometheus",
+      "gridPos": {"h": 4, "w": 4, "x": 8, "y": 24},
+      "targets": [{
+        "expr": "rate(llm_evaluation_latency_seconds_sum[5m]) / rate(llm_evaluation_latency_seconds_count[5m])"
+      }],
+      "fieldConfig": {
+        "defaults": {"unit": "s", "color": {"mode": "fixed", "fixedColor": "green"}}
+      }
+    },
+    {
+      "title": "Alerts Triggered",
+      "type": "stat",
+      "datasource": "Prometheus",
+      "gridPos": {"h": 4, "w": 4, "x": 12, "y": 24},
+      "targets": [{"expr": "sum(llm_alerts_triggered_total)"}],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {"mode": "fixed", "fixedColor": "orange"}
+        }
+      }
+    }
+  ],
+  "refresh": "10s"
+}

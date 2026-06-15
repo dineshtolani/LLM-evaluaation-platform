@@ -4,6 +4,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 import uuid as uuid_pkg
 
+from app.monitoring.metrics import (
+    gpu_utilization, gpu_memory_mb, ollama_requests, track_evaluation,
+)
 from app.evaluation.ollama_client import OllamaClient
 from app.evaluation.metrics import (
     compute_quality_score,
@@ -26,6 +29,7 @@ class Evaluator:
         self.ollama = OllamaClient()
         self.mlflow = MLflowService()
 
+    @track_evaluation
     async def evaluate(
         self,
         prompt_id: uuid_pkg.UUID,
@@ -72,17 +76,22 @@ class Evaluator:
 
         self.mlflow.start_run(prompt_obj.name, prompt_obj.id, llm_model_id)
 
-        result = await self.ollama.generate(
-            model=model_name,
-            prompt=prompt_obj.content,
-            system_prompt=prompt_obj.system_prompt,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            top_p=top_p,
-            top_k=top_k,
-            num_ctx=num_ctx,
-            use_gpu=use_gpu,
-        )
+        try:
+            result = await self.ollama.generate(
+                model=model_name,
+                prompt=prompt_obj.content,
+                system_prompt=prompt_obj.system_prompt,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                top_p=top_p,
+                top_k=top_k,
+                num_ctx=num_ctx,
+                use_gpu=use_gpu,
+            )
+            ollama_requests.labels(status="success").inc()
+        except Exception:
+            ollama_requests.labels(status="error").inc()
+            raise
 
         latency_ms = result["latency_ms"]
         response_text = result["response"]
@@ -91,6 +100,9 @@ class Evaluator:
         total_tokens = result["total_tokens"]
 
         gpu_info = await self.ollama.get_gpu_info()
+        if gpu_info.get("gpu_available"):
+            gpu_utilization.set(gpu_info.get("gpu_utilization", 0))
+            gpu_memory_mb.set(gpu_info.get("memory_used_mb", 0))
 
         cost = compute_token_cost(
             prompt_tokens,
