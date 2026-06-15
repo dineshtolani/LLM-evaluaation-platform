@@ -63,7 +63,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install pytest pytest-asyncio pytest-cov aiosqlite
           pip install -r requirements.txt
-          pip install sentence-transformers transformers --no-deps
 
       - name: Test with pytest
         run: python -m pytest tests/ -v --tb=short --cov=app --cov-report=term --cov-report=xml
