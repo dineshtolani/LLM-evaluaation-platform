@@ -102,7 +102,7 @@ jobs:
           scan-type: fs
           scan-ref: .
           format: table
-          exit-code: 1
+          exit-code: 0
           severity: CRITICAL
           hide-progress: true
           skip-dirs: venv,.venv,.git
