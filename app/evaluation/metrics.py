@@ -1,14 +1,25 @@
 import re
 from typing import Optional
-from sentence_transformers import SentenceTransformer, util
 
 
 _embedder = None
 
 
+_util = None
+
+
+def _get_util():
+    global _util
+    if _util is None:
+        from sentence_transformers import util as _st_util
+        _util = _st_util
+    return _util
+
+
 def _get_embedder():
     global _embedder
     if _embedder is None:
+        from sentence_transformers import SentenceTransformer
         _embedder = SentenceTransformer("all-MiniLM-L6-v2")
     return _embedder
 
@@ -57,7 +68,7 @@ def compute_relevance(prompt: str, response: str) -> float:
     model = _get_embedder()
     prompt_emb = model.encode(prompt, convert_to_tensor=True)
     response_emb = model.encode(response, convert_to_tensor=True)
-    similarity = util.cos_sim(prompt_emb, response_emb).item()
+    similarity = _get_util().cos_sim(prompt_emb, response_emb).item()
     return max(0.0, min(1.0, float(similarity)))
 
 
@@ -71,12 +82,12 @@ def compute_hallucination_score(
     if expected_output:
         response_emb = model.encode(response, convert_to_tensor=True)
         expected_emb = model.encode(expected_output, convert_to_tensor=True)
-        consistency = float(util.cos_sim(response_emb, expected_emb).item())
+        consistency = float(_get_util().cos_sim(response_emb, expected_emb).item())
         hallucination = 1.0 - consistency
     else:
         prompt_emb = model.encode(prompt, convert_to_tensor=True)
         response_emb = model.encode(response, convert_to_tensor=True)
-        relevance = float(util.cos_sim(prompt_emb, response_emb).item())
+        relevance = float(_get_util().cos_sim(prompt_emb, response_emb).item())
         hallucination = 1.0 - relevance
 
     return max(0.0, min(1.0, float(hallucination)))
@@ -92,7 +103,7 @@ def compute_factual_consistency(
     model = _get_embedder()
     resp_emb = model.encode(response, convert_to_tensor=True)
     expected_emb = model.encode(expected_output, convert_to_tensor=True)
-    return float(max(0.0, min(1.0, util.cos_sim(resp_emb, expected_emb).item())))
+    return float(max(0.0, min(1.0, _get_util().cos_sim(resp_emb, expected_emb).item())))
 
 
 def compute_sentence_level_hallucination(
@@ -114,7 +125,7 @@ def compute_sentence_level_hallucination(
     results = []
     for sentence in sentences:
         sent_emb = model.encode(sentence, convert_to_tensor=True)
-        similarity = float(util.cos_sim(sent_emb, expected_emb).item())
+        similarity = float(_get_util().cos_sim(sent_emb, expected_emb).item())
         results.append({
             "sentence": sentence,
             "similarity": round(similarity, 4),
