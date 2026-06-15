@@ -9,6 +9,7 @@ resources:
   - postgres.yaml
   - redis.yaml
   - mlflow.yaml
+  - prometheus.yaml
   - grafana.yaml
   - app.yaml
   - dashboard.yaml

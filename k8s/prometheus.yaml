@@ -1,0 +1,94 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: llm-eval-prometheus-config
+  namespace: llm-eval
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+    scrape_configs:
+      - job_name: "llm-eval-app"
+        static_configs:
+          - targets: ["llm-eval-app:8000"]
+        metrics_path: /metrics
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: llm-eval-prometheus-pvc
+  namespace: llm-eval
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llm-eval-prometheus
+  namespace: llm-eval
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: llm-eval-prometheus
+  template:
+    metadata:
+      labels:
+        app: llm-eval-prometheus
+    spec:
+      containers:
+        - name: prometheus
+          image: prom/prometheus:latest
+          ports:
+            - containerPort: 9090
+          args:
+            - "--config.file=/etc/prometheus/prometheus.yml"
+            - "--storage.tsdb.retention.time=30d"
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: 1
+              memory: 1Gi
+          volumeMounts:
+            - name: config
+              mountPath: /etc/prometheus
+            - name: data
+              mountPath: /prometheus
+          livenessProbe:
+            tcpSocket:
+              port: 9090
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: 9090
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      volumes:
+        - name: config
+          configMap:
+            name: llm-eval-prometheus-config
+        - name: data
+          persistentVolumeClaim:
+            claimName: llm-eval-prometheus-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: llm-eval-prometheus
+  namespace: llm-eval
+spec:
+  selector:
+    app: llm-eval-prometheus
+  ports:
+    - port: 9090
+      targetPort: 9090
