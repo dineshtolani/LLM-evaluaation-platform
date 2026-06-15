@@ -61,10 +61,11 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest pytest-asyncio pytest-cov aiosqlite httpx
-          pip install fastapi uvicorn[standard] sqlalchemy asyncpg psycopg2-binary
+          pip install pytest pytest-asyncio pytest-cov aiosqlite
+          pip install fastapi uvicorn sqlalchemy asyncpg psycopg2-binary alembic
           pip install pydantic pydantic-settings python-dotenv prometheus-client
-          pip install numpy
+          pip install tenacity numpy httpx python-multipart
+          pip install mlflow redis
 
       - name: Test with pytest
         run: python -m pytest tests/ -v --tb=short --cov=app --cov-report=term --cov-report=xml
