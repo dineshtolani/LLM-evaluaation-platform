@@ -1,13 +1,11 @@
 import pytest
 from unittest.mock import patch, MagicMock, AsyncMock
 import uuid
-from datetime import datetime, timezone
-
-pytestmark = pytest.mark.asyncio(loop_scope="function")
-
 from app.evaluation.evaluator import Evaluator
 from app.models.prompt import Prompt
 from app.models.llm_model import LLMModel
+
+pytestmark = pytest.mark.asyncio(loop_scope="function")
 
 
 @pytest.fixture

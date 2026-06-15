@@ -4,12 +4,11 @@ from unittest.mock import patch, AsyncMock
 
 import pytest
 from httpx import AsyncClient
-
-pytestmark = pytest.mark.asyncio(loop_scope="function")
-
 from app.models.prompt import Prompt
 from app.models.evaluation import Evaluation
 from app.evaluation.evaluator import Evaluator
+
+pytestmark = pytest.mark.asyncio(loop_scope="function")
 
 
 def make_mock_evaluation(prompt_id, model_id, **overrides):

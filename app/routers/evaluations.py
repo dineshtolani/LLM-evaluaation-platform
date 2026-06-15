@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc, Integer
 from typing import Optional
 import uuid
+import json
 
 from app.database import get_db
 from app.models.evaluation import Evaluation
@@ -158,7 +159,7 @@ async def get_evaluation_stats(db: AsyncSession = Depends(get_db)):
     }
 
 
-from pydantic import BaseModel
+from pydantic import BaseModel  # noqa: E402
 
 
 class DetoxRequest(BaseModel):

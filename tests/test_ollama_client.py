@@ -1,10 +1,8 @@
 import pytest
-from unittest.mock import patch, MagicMock, AsyncMock, PropertyMock
-import json
+from unittest.mock import patch, MagicMock, AsyncMock
+from app.evaluation.ollama_client import OllamaClient
 
 pytestmark = pytest.mark.asyncio(loop_scope="function")
-
-from app.evaluation.ollama_client import OllamaClient
 
 
 @pytest.fixture

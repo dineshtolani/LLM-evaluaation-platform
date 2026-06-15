@@ -1,8 +1,6 @@
 import re
-import math
 from typing import Optional
 from sentence_transformers import SentenceTransformer, util
-import numpy as np
 
 
 _embedder = None
@@ -123,7 +121,6 @@ def compute_sentence_level_hallucination(
             "hallucination": 1.0 - similarity,
         })
 
-    avg_hallucination = sum(r["hallucination"] for r in results) / len(results)
     worst_hallucination = max(r["hallucination"] for r in results)
 
     return worst_hallucination, results

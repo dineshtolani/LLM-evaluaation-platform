@@ -1,5 +1,4 @@
 import httpx
-import json
 import time
 from typing import Optional
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -90,7 +89,7 @@ class OllamaClient:
                         "memory_used_mb": float(parts[1]),
                         "memory_total_mb": float(parts[2]),
                     }
-        except Exception as e:
+        except Exception:
             pass
 
         try:

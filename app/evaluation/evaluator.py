@@ -1,5 +1,4 @@
 import json
-import time
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -72,8 +71,6 @@ class Evaluator:
         llm_model_id = model_obj.id
 
         self.mlflow.start_run(prompt_obj.name, prompt_obj.id, llm_model_id)
-
-        start_time = time.time()
 
         result = await self.ollama.generate(
             model=model_name,
