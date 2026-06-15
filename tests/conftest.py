@@ -1,4 +1,5 @@
-from unittest.mock import patch, AsyncMock
+import sys
+from unittest.mock import patch, AsyncMock, MagicMock
 
 import pytest_asyncio
 import uuid
@@ -6,6 +7,12 @@ from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import (
     AsyncSession, create_async_engine, async_sessionmaker,
 )
+
+_mock_st = MagicMock()
+_mock_st.SentenceTransformer = MagicMock
+_mock_st.util = MagicMock()
+_mock_st.util.cos_sim = MagicMock(return_value=MagicMock(item=MagicMock(return_value=0.5)))
+sys.modules["sentence_transformers"] = _mock_st
 
 from app.database import Base
 from app.main import app
