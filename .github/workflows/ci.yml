@@ -61,10 +61,10 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest pytest-asyncio pytest-cov aiosqlite httpx numpy
-          # Install production deps but skip heavy ML packages (mocked in tests)
-          sed '/torch\|sentence-transformers\|transformers/d' requirements.txt > /tmp/test-reqs.txt
-          pip install -r /tmp/test-reqs.txt
+          pip install pytest pytest-asyncio pytest-cov aiosqlite httpx
+          pip install fastapi uvicorn[standard] sqlalchemy psycopg2-binary
+          pip install pydantic pydantic-settings python-dotenv prometheus-client
+          pip install numpy
 
       - name: Test with pytest
         run: python -m pytest tests/ -v --tb=short --cov=app --cov-report=term --cov-report=xml
