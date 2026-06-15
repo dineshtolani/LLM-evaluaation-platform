@@ -1,0 +1,86 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: llm-eval-mlflow-pvc
+  namespace: llm-eval
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llm-eval-mlflow
+  namespace: llm-eval
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: llm-eval-mlflow
+  template:
+    metadata:
+      labels:
+        app: llm-eval-mlflow
+    spec:
+      containers:
+        - name: mlflow
+          image: python:3.14-slim
+          command:
+            - sh
+            - -c
+            - |
+              pip install -q mlflow psycopg2-binary &&
+              mlflow server \
+                --backend-store-uri $(MLFLOW_BACKEND_STORE_URI) \
+                --default-artifact-root /mlflow-artifacts \
+                --host 0.0.0.0 \
+                --port 5000
+          ports:
+            - containerPort: 5000
+          env:
+            - name: MLFLOW_BACKEND_STORE_URI
+              valueFrom:
+                configMapKeyRef:
+                  name: llm-eval-config
+                  key: DATABASE_URL_SYNC
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: 1
+              memory: 1Gi
+          volumeMounts:
+            - name: data
+              mountPath: /mlflow-artifacts
+          livenessProbe:
+            tcpSocket:
+              port: 5000
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: llm-eval-mlflow-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: llm-eval-mlflow
+  namespace: llm-eval
+spec:
+  selector:
+    app: llm-eval-mlflow
+  ports:
+    - port: 5000
+      targetPort: 5000

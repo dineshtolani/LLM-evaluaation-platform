@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: llm-eval-config
+  namespace: llm-eval
+data:
+  POSTGRES_DB: llmevaldb
+  POSTGRES_USER: llmeval
+  DATABASE_URL: "postgresql+asyncpg://llmeval:llmeval@llm-eval-postgres:5432/llmevaldb"
+  DATABASE_URL_SYNC: "postgresql://llmeval:llmeval@llm-eval-postgres:5432/llmevaldb"
+  MLFLOW_TRACKING_URI: "http://llm-eval-mlflow:5000"
+  OLLAMA_BASE_URL: "http://ollama:11434"
+  REDIS_URL: "redis://llm-eval-redis:6379/0"
+  APP_HOST: "0.0.0.0"
+  APP_PORT: "8000"
+  LOG_LEVEL: "info"

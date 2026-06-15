@@ -1,0 +1,50 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: llm-eval-ingress
+  namespace: llm-eval
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: app.llm-eval.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: llm-eval-app
+                port:
+                  number: 8000
+    - host: dashboard.llm-eval.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: llm-eval-dashboard
+                port:
+                  number: 8501
+    - host: mlflow.llm-eval.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: llm-eval-mlflow
+                port:
+                  number: 5000
+    - host: grafana.llm-eval.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: llm-eval-grafana
+                port:
+                  number: 3000
