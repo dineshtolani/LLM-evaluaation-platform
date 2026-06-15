@@ -1,0 +1,82 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: llm-eval-ollama-setup
+  namespace: llm-eval
+data:
+  setup.sh: |
+    #!/bin/sh
+    echo "Pulling tinyllama model..."
+    ollama pull tinyllama
+    echo "Model ready."
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llm-eval-ollama
+  namespace: llm-eval
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: llm-eval-ollama
+  template:
+    metadata:
+      labels:
+        app: llm-eval-ollama
+    spec:
+      initContainers:
+        - name: pull-model
+          image: ollama/ollama:latest
+          command:
+            - sh
+            - -c
+            - |
+              ollama pull tinyllama
+          volumeMounts:
+            - name: models
+              mountPath: /root/.ollama
+      containers:
+        - name: ollama
+          image: ollama/ollama:latest
+          ports:
+            - containerPort: 11434
+          env:
+            - name: OLLAMA_HOST
+              value: "0.0.0.0"
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: 2
+              memory: 2Gi
+          volumeMounts:
+            - name: models
+              mountPath: /root/.ollama
+          livenessProbe:
+            tcpSocket:
+              port: 11434
+            initialDelaySeconds: 60
+            periodSeconds: 15
+          readinessProbe:
+            tcpSocket:
+              port: 11434
+            initialDelaySeconds: 30
+            periodSeconds: 10
+      volumes:
+        - name: models
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: llm-eval-ollama
+  namespace: llm-eval
+spec:
+  selector:
+    app: llm-eval-ollama
+  ports:
+    - port: 11434
+      targetPort: 11434

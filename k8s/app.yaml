@@ -17,6 +17,7 @@ spec:
       containers:
         - name: app
           image: ghcr.io/dineshtolani/llm-eval-platform:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
           envFrom:

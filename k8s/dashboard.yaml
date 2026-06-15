@@ -17,6 +17,7 @@ spec:
       containers:
         - name: dashboard
           image: ghcr.io/dineshtolani/llm-eval-dashboard:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8501
           env:
