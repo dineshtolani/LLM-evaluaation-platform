@@ -14,11 +14,11 @@ _mock_st.util = MagicMock()
 _mock_st.util.cos_sim = MagicMock(return_value=MagicMock(item=MagicMock(return_value=0.5)))
 sys.modules["sentence_transformers"] = _mock_st
 
-from app.database import Base
-from app.main import app
-from app.models.prompt import Prompt
-from app.models.llm_model import LLMModel
-from app.models.alert import Alert, AlertMetric, AlertOperator, AlertStatus
+from app.database import Base  # noqa: E402
+from app.main import app  # noqa: E402
+from app.models.prompt import Prompt  # noqa: E402
+from app.models.llm_model import LLMModel  # noqa: E402
+from app.models.alert import Alert, AlertMetric, AlertOperator, AlertStatus  # noqa: E402
 
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 test_engine = create_async_engine(TEST_DATABASE_URL, echo=False)
