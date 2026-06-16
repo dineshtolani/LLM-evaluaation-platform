@@ -2,6 +2,7 @@ import asyncio
 import logging
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy import text
 from app.config import settings
 
 logger = logging.getLogger(__name__)
@@ -23,11 +24,38 @@ async def get_db():
             await session.close()
 
 
+DEEPEVAL_COLUMNS = [
+    "deepeval_faithfulness_score",
+    "deepeval_hallucination_score",
+    "deepeval_toxicity_score",
+    "deepeval_bias_score",
+    "deepeval_g_eval_score",
+]
+DEEPEVAL_COLUMN_DEFS = {
+    "deepeval_faithfulness_score": "FLOAT",
+    "deepeval_hallucination_score": "FLOAT",
+    "deepeval_toxicity_score": "FLOAT",
+    "deepeval_bias_score": "FLOAT",
+    "deepeval_g_eval_score": "FLOAT",
+}
+
+
 async def init_db():
     for attempt in range(30):
         try:
             async with engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
+
+                for col in DEEPEVAL_COLUMNS:
+                    try:
+                        await conn.execute(
+                            text(
+                                f"ALTER TABLE evaluations ADD COLUMN IF NOT EXISTS {col} {DEEPEVAL_COLUMN_DEFS[col]}"
+                            )
+                        )
+                    except Exception:
+                        pass
+
             logger.info("Database tables created successfully")
             return
         except Exception as e:

@@ -14,6 +14,7 @@ class EvalRequest(BaseModel):
     top_k: int = 40
     num_ctx: int = 4096
     use_gpu: bool = True
+    use_deepeval: bool = False
 
 
 class EvalResponse(BaseModel):
@@ -33,6 +34,11 @@ class EvalResponse(BaseModel):
     quality_score: Optional[float] = None
     relevance_score: Optional[float] = None
     factual_consistency: Optional[float] = None
+    deepeval_faithfulness_score: Optional[float] = None
+    deepeval_hallucination_score: Optional[float] = None
+    deepeval_toxicity_score: Optional[float] = None
+    deepeval_bias_score: Optional[float] = None
+    deepeval_g_eval_score: Optional[float] = None
     gpu_utilization: Optional[float] = None
     gpu_memory_used_mb: Optional[float] = None
     mlflow_run_id: Optional[str] = None
@@ -55,6 +61,11 @@ class EvaluationResponse(BaseModel):
     quality_score: Optional[float] = None
     relevance_score: Optional[float] = None
     factual_consistency: Optional[float] = None
+    deepeval_faithfulness_score: Optional[float] = None
+    deepeval_hallucination_score: Optional[float] = None
+    deepeval_toxicity_score: Optional[float] = None
+    deepeval_bias_score: Optional[float] = None
+    deepeval_g_eval_score: Optional[float] = None
     gpu_utilization: Optional[float] = None
     gpu_memory_used_mb: Optional[float] = None
     mlflow_run_id: Optional[str] = None

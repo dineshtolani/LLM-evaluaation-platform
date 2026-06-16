@@ -18,6 +18,7 @@ from app.evaluation.metrics import (
     compute_token_cost,
 )
 from app.evaluation.toxicity import compute_toxicity
+from app.evaluation.deepeval_metrics import run_deepeval_metrics
 from app.models.prompt import Prompt
 from app.models.evaluation import Evaluation
 from app.models.llm_model import LLMModel
@@ -42,6 +43,7 @@ class Evaluator:
         num_ctx: int = 4096,
         llm_model_id: Optional[uuid_pkg.UUID] = None,
         use_gpu: bool = True,
+        use_deepeval: bool = False,
     ) -> Evaluation:
         prompt_result = await self.db.execute(
             select(Prompt).where(Prompt.id == prompt_id)
@@ -129,6 +131,19 @@ class Evaluator:
 
         toxicity_result = await asyncio.to_thread(compute_toxicity, response_text)
 
+        deepeval_results = None
+        if use_deepeval and (prompt_obj.expected_output or prompt_obj.content):
+            from app.config import settings
+            deepeval_results = await asyncio.to_thread(
+                run_deepeval_metrics,
+                input_text=prompt_obj.content,
+                actual_output=response_text,
+                expected_output=prompt_obj.expected_output,
+                context=[prompt_obj.content],
+                ollama_base_url=settings.ollama_base_url.rstrip("/api"),
+                model_name=model_name,
+            )
+
         params = {
             "temperature": temperature,
             "max_tokens": max_tokens,
@@ -156,6 +171,11 @@ class Evaluator:
             quality_score=quality,
             relevance_score=relevance,
             factual_consistency=factual_consistency,
+            deepeval_faithfulness_score=deepeval_results.faithfulness_score if deepeval_results else None,
+            deepeval_hallucination_score=deepeval_results.hallucination_score if deepeval_results else None,
+            deepeval_toxicity_score=deepeval_results.toxicity_score if deepeval_results else None,
+            deepeval_bias_score=deepeval_results.bias_score if deepeval_results else None,
+            deepeval_g_eval_score=deepeval_results.g_eval_score if deepeval_results else None,
             sentence_analysis_json=json.dumps(sentence_analysis) if sentence_analysis else None,
             gpu_utilization=gpu_info.get("gpu_utilization"),
             gpu_memory_used_mb=gpu_info.get("memory_used_mb"),

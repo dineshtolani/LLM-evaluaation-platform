@@ -23,3 +23,5 @@ seaborn==0.13.2
 plotly==5.24.1
 python-multipart==0.0.12
 redis==5.1.1
+deepeval>=4.0.0
+ollama>=0.6.0

@@ -33,6 +33,12 @@ class Evaluation(Base):
     gpu_memory_used_mb: Mapped[float | None] = mapped_column(Float, nullable=True)
     mlflow_run_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
+    deepeval_faithfulness_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    deepeval_hallucination_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    deepeval_toxicity_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    deepeval_bias_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    deepeval_g_eval_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+
     params_json: Mapped[str | None] = mapped_column(Text, nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

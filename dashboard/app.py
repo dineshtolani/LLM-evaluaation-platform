@@ -88,6 +88,8 @@ with tab2:
             expected = st.text_area("Expected output (optional)", height=60,
                                     placeholder="e.g., Paris")
             selected_model = st.selectbox("Model", options=list(model_options.keys()))
+            use_deepeval = st.checkbox("🧪 DeepEval metrics (LLM-as-Judge)", value=False,
+                                       help="Uses deepeval for faithfulness, hallucination, toxicity, bias scoring via LLM-as-Judge")
             col_t, col_m = st.columns(2)
             with col_t:
                 temp = st.slider("Temperature", 0.0, 2.0, 0.7, 0.1)
@@ -112,6 +114,7 @@ with tab2:
                                 "model_name": selected_model,
                                 "temperature": temp,
                                 "max_tokens": max_tokens,
+                                "use_deepeval": use_deepeval,
                             })
                         if result:
                             st.success("Evaluation complete!")
@@ -126,6 +129,16 @@ with tab2:
                             c4.metric("Toxicity", f"{result.get('toxicity_score', 0):.2%}")
                             if result.get("is_toxic"):
                                 st.warning("⚠️ Toxic content detected")
+
+                            if use_deepeval and result.get("deepeval_faithfulness_score") is not None:
+                                st.subheader("🧪 DeepEval Results")
+                                dc1, dc2, dc3, dc4, dc5 = st.columns(5)
+                                dc1.metric("Faithfulness", f"{result['deepeval_faithfulness_score']:.2%}")
+                                dc2.metric("Hallucination (deepeval)", f"{result['deepeval_hallucination_score']:.2%}")
+                                dc3.metric("Toxicity (deepeval)", f"{result['deepeval_toxicity_score']:.2%}")
+                                dc4.metric("Bias", f"{result['deepeval_bias_score']:.2%}")
+                                if result.get("deepeval_g_eval_score") is not None:
+                                    dc5.metric("G-Eval", f"{result['deepeval_g_eval_score']:.2%}")
                             st.text_area("Response", result["response"], height=200)
         else:
             prompt_options = {}
@@ -139,6 +152,7 @@ with tab2:
             with col2:
                 selected_model = st.selectbox("Select Model", options=list(model_options.keys()))
 
+            use_deepeval = st.checkbox("🧪 DeepEval metrics (LLM-as-Judge)", value=False)
             temp = st.slider("Temperature", 0.0, 2.0, 0.7, 0.1)
             max_tokens = st.slider("Max Tokens", 50, 2000, 500, 50)
 
@@ -150,6 +164,7 @@ with tab2:
                         "model_name": selected_model,
                         "temperature": temp,
                         "max_tokens": max_tokens,
+                        "use_deepeval": use_deepeval,
                     })
                 if result:
                     st.success("Evaluation complete!")
@@ -162,6 +177,15 @@ with tab2:
                     col2.metric("Quality", f"{result.get('quality_score', 0):.2%}")
                     col3.metric("Relevance", f"{result.get('relevance_score', 0):.2%}")
                     col4.metric("Toxicity", f"{result.get('toxicity_score', 0):.2%}")
+                    if use_deepeval and result.get("deepeval_faithfulness_score") is not None:
+                        st.subheader("🧪 DeepEval Results")
+                        dc1, dc2, dc3, dc4, dc5 = st.columns(5)
+                        dc1.metric("Faithfulness", f"{result['deepeval_faithfulness_score']:.2%}")
+                        dc2.metric("Hallucination (deepeval)", f"{result['deepeval_hallucination_score']:.2%}")
+                        dc3.metric("Toxicity (deepeval)", f"{result['deepeval_toxicity_score']:.2%}")
+                        dc4.metric("Bias", f"{result['deepeval_bias_score']:.2%}")
+                        if result.get("deepeval_g_eval_score") is not None:
+                            dc5.metric("G-Eval", f"{result['deepeval_g_eval_score']:.2%}")
                     st.text_area("Response", result["response"], height=200)
 
 with tab3:
@@ -170,7 +194,8 @@ with tab3:
     if evals and evals.get("items"):
         df = pd.DataFrame(evals["items"])
         cols = ["created_at", "model_name", "prompt_name", "latency_ms", "total_tokens",
-                "hallucination_score", "quality_score", "toxicity_score", "token_cost"]
+                "hallucination_score", "quality_score", "relevance_score", "toxicity_score", "token_cost",
+                "deepeval_faithfulness_score", "deepeval_hallucination_score", "deepeval_toxicity_score", "deepeval_bias_score"]
         display_cols = [c for c in cols if c in df.columns]
         st.dataframe(df[display_cols], use_container_width=True)
 
