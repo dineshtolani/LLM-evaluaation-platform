@@ -1,15 +1,15 @@
 ---
 apiVersion: v1
-kind: ConfigMap
+kind: PersistentVolumeClaim
 metadata:
-  name: llm-eval-ollama-setup
+  name: llm-eval-ollama-pvc
   namespace: llm-eval
-data:
-  setup.sh: |
-    #!/bin/sh
-    echo "Pulling tinyllama model..."
-    ollama pull tinyllama
-    echo "Model ready."
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -26,20 +26,14 @@ spec:
       labels:
         app: llm-eval-ollama
     spec:
-      initContainers:
-        - name: pull-model
+      containers:
+        - name: ollama
           image: ollama/ollama:latest
           command:
             - sh
             - -c
             - |
-              ollama pull tinyllama
-          volumeMounts:
-            - name: models
-              mountPath: /root/.ollama
-      containers:
-        - name: ollama
-          image: ollama/ollama:latest
+              exec ollama serve
           ports:
             - containerPort: 11434
           env:
@@ -58,16 +52,17 @@ spec:
           livenessProbe:
             tcpSocket:
               port: 11434
-            initialDelaySeconds: 60
+            initialDelaySeconds: 10
             periodSeconds: 15
           readinessProbe:
             tcpSocket:
               port: 11434
-            initialDelaySeconds: 30
+            initialDelaySeconds: 5
             periodSeconds: 10
       volumes:
         - name: models
-          emptyDir: {}
+          persistentVolumeClaim:
+            claimName: llm-eval-ollama-pvc
 ---
 apiVersion: v1
 kind: Service

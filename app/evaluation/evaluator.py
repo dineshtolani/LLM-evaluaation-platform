@@ -1,3 +1,4 @@
+import asyncio
 import json
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -104,30 +105,29 @@ class Evaluator:
             gpu_utilization.set(gpu_info.get("gpu_utilization", 0))
             gpu_memory_mb.set(gpu_info.get("memory_used_mb", 0))
 
-        cost = compute_token_cost(
-            prompt_tokens,
-            completion_tokens,
+        cost = await asyncio.to_thread(
+            compute_token_cost,
+            prompt_tokens, completion_tokens,
             model_obj.cost_per_prompt_token,
             model_obj.cost_per_completion_token,
         )
 
-        hallucination = compute_hallucination_score(
-            response_text, prompt_obj.content, prompt_obj.expected_output
-        )
-        quality = compute_quality_score(response_text)
-        relevance = compute_relevance(prompt_obj.content, response_text)
-        factual_consistency = compute_factual_consistency(
-            response_text, prompt_obj.expected_output
+        hallucination, quality, relevance, factual_consistency = await asyncio.gather(
+            asyncio.to_thread(compute_hallucination_score, response_text, prompt_obj.content, prompt_obj.expected_output),
+            asyncio.to_thread(compute_quality_score, response_text),
+            asyncio.to_thread(compute_relevance, prompt_obj.content, response_text),
+            asyncio.to_thread(compute_factual_consistency, response_text, prompt_obj.expected_output),
         )
 
         nli_hallucination = None
         sentence_analysis = None
         if prompt_obj.expected_output:
-            nli_hallucination, sentence_analysis = compute_sentence_level_hallucination(
-                response_text, prompt_obj.expected_output
+            nli_hallucination, sentence_analysis = await asyncio.to_thread(
+                compute_sentence_level_hallucination,
+                response_text, prompt_obj.expected_output,
             )
 
-        toxicity_result = compute_toxicity(response_text)
+        toxicity_result = await asyncio.to_thread(compute_toxicity, response_text)
 
         params = {
             "temperature": temperature,

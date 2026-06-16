@@ -33,7 +33,7 @@ spec:
             - sh
             - -c
             - |
-              pip install -q mlflow psycopg2-binary &&
+              pip install -q --no-cache-dir mlflow psycopg2-binary &&
               mlflow server \
                 --backend-store-uri $(MLFLOW_BACKEND_STORE_URI) \
                 --default-artifact-root /mlflow-artifacts \
@@ -49,24 +49,30 @@ spec:
                   key: DATABASE_URL_SYNC
           resources:
             requests:
-              cpu: 200m
-              memory: 512Mi
-            limits:
-              cpu: 1
+              cpu: 500m
               memory: 1Gi
+            limits:
+              cpu: 2
+              memory: 2Gi
           volumeMounts:
             - name: data
               mountPath: /mlflow-artifacts
+          startupProbe:
+            tcpSocket:
+              port: 5000
+            initialDelaySeconds: 5
+            failureThreshold: 30
+            periodSeconds: 10
           livenessProbe:
             tcpSocket:
               port: 5000
-            initialDelaySeconds: 30
+            initialDelaySeconds: 300
             periodSeconds: 15
           readinessProbe:
             httpGet:
               path: /health
               port: 5000
-            initialDelaySeconds: 15
+            initialDelaySeconds: 300
             periodSeconds: 10
       volumes:
         - name: data

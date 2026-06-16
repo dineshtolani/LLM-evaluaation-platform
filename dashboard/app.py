@@ -69,53 +69,100 @@ with tab1:
 with tab2:
     st.subheader("Run Evaluation")
 
+    eval_mode = st.radio("Prompt source", ["✏️ Quick Eval (any text)", "📂 Saved prompt"], horizontal=True)
+
     prompts = fetch_json("prompts?page_size=100")
     models = fetch_json("models?page_size=100")
-
-    prompt_options = {}
-    if prompts and prompts.get("items"):
-        for p in prompts["items"]:
-            prompt_options[f"{p['name']} ({p['id'][:8]})"] = p["id"]
 
     model_options = {}
     if models and models.get("items"):
         for m in models["items"]:
-            model_options[m["name"]] = m["id"]
+            model_options[m["name"]] = m["name"]
+    if not model_options:
+        model_options["tinyllama"] = "tinyllama"
 
-    col1, col2 = st.columns(2)
-    with col1:
-        selected_prompt = st.selectbox("Select Prompt", options=list(prompt_options.keys()))
-    with col2:
-        selected_model = st.selectbox("Select Model", options=list(model_options.keys()) if model_options else ["tinyllama"])
+    with st.container():
+        if eval_mode.startswith("✏️"):
+            prompt_text = st.text_area("Enter your prompt", height=120,
+                                       placeholder="e.g., What is the capital of France?")
+            expected = st.text_area("Expected output (optional)", height=60,
+                                    placeholder="e.g., Paris")
+            selected_model = st.selectbox("Model", options=list(model_options.keys()))
+            col_t, col_m = st.columns(2)
+            with col_t:
+                temp = st.slider("Temperature", 0.0, 2.0, 0.7, 0.1)
+            with col_m:
+                max_tokens = st.slider("Max Tokens", 50, 2000, 500, 50)
 
-    temp = st.slider("Temperature", 0.0, 2.0, 0.7, 0.1)
-    max_tokens = st.slider("Max Tokens", 50, 2000, 500, 50)
+            if st.button("🚀 Quick Evaluate", type="primary"):
+                if not prompt_text.strip():
+                    st.warning("Enter a prompt first.")
+                else:
+                    with st.spinner("Creating prompt + running evaluation..."):
+                        created = post_json("prompts", {
+                            "name": f"quick-{datetime.now().strftime('%H%M%S')}",
+                            "content": prompt_text,
+                            "category": "other",
+                            "expected_output": expected if expected.strip() else None,
+                        })
+                    if created:
+                        with st.spinner("Running evaluation..."):
+                            result = post_json("evaluations", {
+                                "prompt_id": created["id"],
+                                "model_name": selected_model,
+                                "temperature": temp,
+                                "max_tokens": max_tokens,
+                            })
+                        if result:
+                            st.success("Evaluation complete!")
+                            c1, c2, c3 = st.columns(3)
+                            c1.metric("Latency", f"{result['latency_ms']:.0f}ms")
+                            c2.metric("Tokens", result['total_tokens'])
+                            c3.metric("Cost", f"${result['token_cost']:.6f}")
+                            c1, c2, c3, c4 = st.columns(4)
+                            c1.metric("Hallucination", f"{result.get('hallucination_score', 0):.2%}")
+                            c2.metric("Quality", f"{result.get('quality_score', 0):.2%}")
+                            c3.metric("Relevance", f"{result.get('relevance_score', 0):.2%}")
+                            c4.metric("Toxicity", f"{result.get('toxicity_score', 0):.2%}")
+                            if result.get("is_toxic"):
+                                st.warning("⚠️ Toxic content detected")
+                            st.text_area("Response", result["response"], height=200)
+        else:
+            prompt_options = {}
+            if prompts and prompts.get("items"):
+                for p in prompts["items"]:
+                    prompt_options[f"{p['name']} ({p['id'][:8]})"] = p["id"]
 
-    if st.button("🚀 Run Evaluation", type="primary"):
-        with st.spinner("Running evaluation..."):
-            prompt_id = prompt_options[selected_prompt]
-            model_name = selected_model if selected_model in model_options.values() else selected_model
-            result = post_json("evaluations", {
-                "prompt_id": prompt_id,
-                "model_name": model_name if model_name in ["tinyllama", "llama3.2", "mistral", "phi"] else model_name,
-                "temperature": temp,
-                "max_tokens": max_tokens,
-            })
+            col1, col2 = st.columns(2)
+            with col1:
+                selected_prompt = st.selectbox("Select Prompt", options=list(prompt_options.keys()))
+            with col2:
+                selected_model = st.selectbox("Select Model", options=list(model_options.keys()))
 
-        if result:
-            st.success("Evaluation complete!")
-            col1, col2, col3 = st.columns(3)
-            col1.metric("Latency", f"{result['latency_ms']:.0f}ms")
-            col2.metric("Tokens", result['total_tokens'])
-            col3.metric("Cost", f"${result['token_cost']:.6f}")
+            temp = st.slider("Temperature", 0.0, 2.0, 0.7, 0.1)
+            max_tokens = st.slider("Max Tokens", 50, 2000, 500, 50)
 
-            col1, col2, col3, col4 = st.columns(4)
-            col1.metric("Hallucination", f"{result.get('hallucination_score', 0):.2%}")
-            col2.metric("Quality", f"{result.get('quality_score', 0):.2%}")
-            col3.metric("Relevance", f"{result.get('relevance_score', 0):.2%}")
-            col4.metric("Toxicity", f"{result.get('toxicity_score', 0):.2%}")
-
-            st.text_area("Response", result["response"], height=200)
+            if st.button("🚀 Run Evaluation", type="primary"):
+                with st.spinner("Running evaluation..."):
+                    prompt_id = prompt_options[selected_prompt]
+                    result = post_json("evaluations", {
+                        "prompt_id": prompt_id,
+                        "model_name": selected_model,
+                        "temperature": temp,
+                        "max_tokens": max_tokens,
+                    })
+                if result:
+                    st.success("Evaluation complete!")
+                    col1, col2, col3 = st.columns(3)
+                    col1.metric("Latency", f"{result['latency_ms']:.0f}ms")
+                    col2.metric("Tokens", result['total_tokens'])
+                    col3.metric("Cost", f"${result['token_cost']:.6f}")
+                    col1, col2, col3, col4 = st.columns(4)
+                    col1.metric("Hallucination", f"{result.get('hallucination_score', 0):.2%}")
+                    col2.metric("Quality", f"{result.get('quality_score', 0):.2%}")
+                    col3.metric("Relevance", f"{result.get('relevance_score', 0):.2%}")
+                    col4.metric("Toxicity", f"{result.get('toxicity_score', 0):.2%}")
+                    st.text_area("Response", result["response"], height=200)
 
 with tab3:
     st.subheader("Evaluation History")
