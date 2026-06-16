@@ -16,6 +16,9 @@ Thumbs.db
 # HuggingFace cache
 .huggingface/
 
+# DeepEval
+.deepeval/
+
 # Logs
 *.log
 .pytest_cache/
