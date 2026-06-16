@@ -1,4 +1,4 @@
-from prometheus_client import Counter, Histogram, Gauge, Summary
+from prometheus_client import Counter, Histogram, Gauge
 import time
 from functools import wraps
 
@@ -88,7 +88,7 @@ def track_evaluation(metric_func):
             if hasattr(result, "is_toxic") and result.is_toxic:
                 toxic_responses.inc()
             return result
-        except Exception as e:
+        except Exception:
             model_name = kwargs.get("model_name", "unknown")
             evaluations_total.labels(status="error", model_name=model_name).inc()
             raise
